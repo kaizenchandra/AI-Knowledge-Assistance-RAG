@@ -1,0 +1,47 @@
+name: Verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Configure ephemeral development environment
+        run: |
+          cp .env.example .env
+          sed -i "s/DB_PASSWORD=replace-with-random-hex/DB_PASSWORD=$(openssl rand -hex 24)/" .env
+          sed -i "s/DEV_TOKEN=replace-with-random-hex/DEV_TOKEN=$(openssl rand -hex 32)/" .env
+      - run: docker compose up -d --build
+      - name: Backend verification
+        run: |
+          docker compose run --rm --no-deps api ruff check --no-cache app tests
+          docker compose run --rm --no-deps api ruff format --check --no-cache app tests migrations
+          docker compose run --rm -e RUN_INTEGRATION=1 api python -m pytest -q -p no:cacheprovider tests
+      - name: Frontend verification
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run typecheck
+          npx playwright install --with-deps chromium
+          npm test
+          npm audit --audit-level=high
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+      - name: Stop test environment
+        if: always()
+        run: docker compose down
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform -chdir=infra fmt -check
+      - run: terraform -chdir=infra init -backend=false
+      - run: terraform -chdir=infra validate

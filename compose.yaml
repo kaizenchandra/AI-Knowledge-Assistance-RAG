@@ -1,0 +1,59 @@
+name: knowledge-intelligence
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U rag -d rag']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: ./backend
+    env_file: .env
+    environment: &backend-env
+      DATABASE_URL: postgresql+psycopg://rag:${DB_PASSWORD}@db:5432/rag
+      REDIS_URL: redis://redis:6379/0
+    command: [sh, -c, 'alembic upgrade head && python -m app.bootstrap']
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    build: ./backend
+    env_file: .env
+    environment: *backend-env
+    ports: ['127.0.0.1:8100:8000']
+    volumes: [originals:/data]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  worker:
+    build: ./backend
+    env_file: .env
+    environment: *backend-env
+    command: [python, -m, app.worker]
+    volumes: [originals:/data]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  web:
+    build: ./frontend
+    ports: ['127.0.0.1:3100:3000']
+    depends_on: [api]
+volumes:
+  postgres:
+  originals:

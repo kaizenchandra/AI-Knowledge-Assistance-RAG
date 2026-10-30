@@ -1,0 +1,25 @@
+services:
+  api:
+    environment:
+      SCAN_MODE: clamav
+    depends_on:
+      clamav:
+        condition: service_healthy
+  worker:
+    environment:
+      SCAN_MODE: clamav
+    depends_on:
+      clamav:
+        condition: service_healthy
+  clamav:
+    image: clamav/clamav:1.4.3
+    platform: linux/amd64
+    volumes: [clamav-signatures:/var/lib/clamav]
+    healthcheck:
+      test: [CMD, clamdcheck.sh]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    mem_limit: 2g
+volumes:
+  clamav-signatures:

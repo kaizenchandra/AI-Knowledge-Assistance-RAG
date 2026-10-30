@@ -1,0 +1,54 @@
+name: Explicit live integration smoke tests
+on:
+  workflow_dispatch:
+    inputs:
+      pinecone_model:
+        description: 'Run billable Pinecone and model smoke test'
+        type: boolean
+        default: false
+      s3:
+        description: 'Write/read/delete a synthetic object in the configured S3 bucket'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  smoke:
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure synthetic test environment
+        env:
+          LIVE: ${{ inputs.pinecone_model }}
+          USE_S3: ${{ inputs.s3 }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CHAT_MODEL: ${{ vars.CHAT_MODEL }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_HOST: ${{ vars.PINECONE_HOST }}
+          PINECONE_INDEX: ${{ vars.PINECONE_INDEX }}
+          S3_BUCKET: ${{ vars.S3_TEST_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          python - <<'PY'
+          import json, os, secrets
+          from pathlib import Path
+          live, s3 = os.environ['LIVE'] == 'true', os.environ['USE_S3'] == 'true'
+          values = {k: os.environ[k] for k in ['OPENAI_API_KEY','CHAT_MODEL','PINECONE_API_KEY','PINECONE_HOST','S3_BUCKET','AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_SESSION_TOKEN','AWS_REGION'] if os.environ.get(k)}
+          values['PINECONE_INDEX'] = os.environ.get('PINECONE_INDEX') or 'knowledge'
+          required = (['OPENAI_API_KEY','CHAT_MODEL','PINECONE_API_KEY','PINECONE_HOST'] if live else []) + (['S3_BUCKET','AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY'] if s3 else [])
+          missing = [k for k in required if not values.get(k)]
+          if missing:
+              raise SystemExit('Missing configuration keys: '+', '.join(missing))
+          values.update(DB_PASSWORD=secrets.token_hex(24), DEV_TOKEN=secrets.token_hex(32), ENVIRONMENT='development', PROVIDER='live' if live else 'offline', STORAGE='s3' if s3 else 'local', RUN_LIVE_TESTS='1' if live else '0', RUN_S3_TESTS='1' if s3 else '0', RUN_SCANNER_TESTS='1')
+          Path('.env').write_text(''.join(k+'='+json.dumps(v)+'\n' for k,v in values.items()))
+          Path('.env').chmod(0o600)
+          PY
+      - run: docker compose -f compose.yaml -f compose.scanner.yaml build api
+      - run: docker compose -f compose.yaml -f compose.scanner.yaml up -d --wait --wait-timeout 300 clamav
+      - run: docker compose -f compose.yaml -f compose.scanner.yaml run --rm --no-deps api python -m pytest -q -p no:cacheprovider tests/test_live.py
+      - if: always()
+        run: docker compose -f compose.yaml -f compose.scanner.yaml down

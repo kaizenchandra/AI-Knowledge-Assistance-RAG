@@ -1,0 +1,12 @@
+region = "us-east-1"
+name = "knowledge-staging"
+vpc_id = "vpc-REPLACE"
+private_subnet_ids = ["subnet-REPLACE-A", "subnet-REPLACE-B"]
+load_balancer_security_group_id = "sg-REPLACE"
+api_target_group_arn = "arn:aws:elasticloadbalancing:REGION:ACCOUNT:targetgroup/API/ID"
+web_target_group_arn = "arn:aws:elasticloadbalancing:REGION:ACCOUNT:targetgroup/WEB/ID"
+api_image = "ACCOUNT.dkr.ecr.REGION.amazonaws.com/knowledge-api@sha256:REPLACE"
+web_image = "ACCOUNT.dkr.ecr.REGION.amazonaws.com/knowledge-web@sha256:REPLACE"
+runtime_secret_arn = "arn:aws:secretsmanager:REGION:ACCOUNT:secret:knowledge-runtime-REPLACE"
+web_origin = "https://knowledge.example.com"
+desired_count = 0

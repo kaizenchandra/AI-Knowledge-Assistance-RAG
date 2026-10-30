@@ -1,0 +1,17 @@
+{
+  "version": "synthetic-v1",
+  "documents": [
+    {"key":"leave","text":"Employees receive twenty days of vacation annually. Vacation requests require ten business days notice."},
+    {"key":"security","text":"Security incidents must be reported to the security team within one hour. Multi-factor authentication is mandatory."},
+    {"key":"travel","text":"Travel expenses require manager approval. Hotel reimbursement is limited to two hundred dollars per night."}
+  ],
+  "cases": [
+    {"id":"factual-leave","question":"How much vacation do employees receive?","expected":["leave"]},
+    {"id":"factual-security","question":"When must security incidents be reported?","expected":["security"]},
+    {"id":"factual-travel","question":"What is the hotel reimbursement limit?","expected":["travel"]},
+    {"id":"unanswerable","question":"What is the CEO salary?","expected":[]},
+    {"id":"multi-document","question":"Summarize vacation and travel expenses.","expected":["leave","travel"]},
+    {"id":"paraphrase","question":"How many paid days off are granted?","expected":["leave"]},
+    {"id":"ambiguous","question":"What is the policy?","expected":[]}
+  ]
+}

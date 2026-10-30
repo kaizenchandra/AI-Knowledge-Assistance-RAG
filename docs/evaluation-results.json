@@ -1,0 +1,95 @@
+{
+  "dataset": "synthetic-v1",
+  "mode": "offline lexical retrieval",
+  "corpus_documents": 3,
+  "mean_recall": 1.0,
+  "abstention_accuracy": 1.0,
+  "limitations": "Small synthetic corpus; no model, embedding, Pinecone, groundedness, load or production latency measurement.",
+  "cases": [
+    {
+      "id": "factual-leave",
+      "predicted": [
+        "leave"
+      ],
+      "expected": [
+        "leave"
+      ],
+      "recall": 1.0,
+      "precision": 1.0,
+      "abstention_correct": true,
+      "retrieval_ms": 5.558
+    },
+    {
+      "id": "factual-security",
+      "predicted": [
+        "security"
+      ],
+      "expected": [
+        "security"
+      ],
+      "recall": 1.0,
+      "precision": 1.0,
+      "abstention_correct": true,
+      "retrieval_ms": 1.137
+    },
+    {
+      "id": "factual-travel",
+      "predicted": [
+        "travel"
+      ],
+      "expected": [
+        "travel"
+      ],
+      "recall": 1.0,
+      "precision": 1.0,
+      "abstention_correct": true,
+      "retrieval_ms": 0.877
+    },
+    {
+      "id": "unanswerable",
+      "predicted": [],
+      "expected": [],
+      "recall": null,
+      "precision": null,
+      "abstention_correct": true,
+      "retrieval_ms": 0.932
+    },
+    {
+      "id": "multi-document",
+      "predicted": [
+        "travel",
+        "leave"
+      ],
+      "expected": [
+        "leave",
+        "travel"
+      ],
+      "recall": 1.0,
+      "precision": 1.0,
+      "abstention_correct": true,
+      "retrieval_ms": 0.796
+    },
+    {
+      "id": "paraphrase",
+      "predicted": [
+        "leave"
+      ],
+      "expected": [
+        "leave"
+      ],
+      "recall": 1.0,
+      "precision": 1.0,
+      "abstention_correct": true,
+      "retrieval_ms": 0.755
+    },
+    {
+      "id": "ambiguous",
+      "predicted": [],
+      "expected": [],
+      "recall": null,
+      "precision": null,
+      "abstention_correct": true,
+      "retrieval_ms": 0.756
+    }
+  ]
+}
